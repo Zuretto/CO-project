@@ -17,9 +17,9 @@ int main(int argc, char* argv[]){
     for(int i=0;i<v;i++)a[i][i]=0;
     for(int i=0;i<v;i++){
         for(int j=i+1;j<v;j++){
-            distance=rand()%1000+1;
-            a[i][j]=distance;
-            a[j][i]=distance;
+            distance=rand() % 1000 + 1;
+            a[i][j] = distance;
+            a[j][i] = distance;
         }
     }
     //you will probably need to change path
