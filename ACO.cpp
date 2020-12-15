@@ -1,6 +1,4 @@
-/*
-two 2D arrays. One for graph and second for pheromones
-*/
+
 #include <omp.h>
 #include <stdio.h>
 #include <omp.h>
@@ -16,7 +14,69 @@ two 2D arrays. One for graph and second for pheromones
 #define BETA 1
 #define RHO 0.5
 #define QDENS 3
-#define CC 1000
+#define CC 1000000
+#define SP 50 //Same_paths
+int* current_path;
+int counter;
+
+
+void find_minimum_path(double** pheromones,int** a,int v){
+	int *path = 	new int[v + 1]; path[0] = 0;
+	bool *visited = new bool[v]; visited[0] = 1; 
+	int sum=0;
+	for(int i = 1; i < v; ++i) 	visited[i] = 0;
+	int current = 0;
+	for(int i = 0; i < v; ++i){
+		double max_val   = 0;
+		int max_index = 0;
+		for(int j = 0; j < v; ++j){
+			if(pheromones[current][j] > max_val && visited[j] == 0){
+				max_val = pheromones[current][j];
+				max_index = j;
+			}
+		}
+		path[i] = current;
+		visited[max_index] = 1;
+		sum+=a[current][max_index];
+		current = max_index;
+	}
+	path[v] = 0;
+	sum+=a[current][0];
+	bool is_same=true;
+	for(int i=0;i<v+1;i++){
+		if(current_path[i]!=path[i]){
+			is_same=false;
+			break;
+		}
+	}
+	bool is_same2=true;
+	for(int i=0;i<v+1;i++){
+		if(current_path[v-i]!=path[i]){
+			is_same2=false;
+			break;
+		}
+	}
+
+	if(is_same || is_same2)counter++;
+	else{
+		counter=1;
+		for(int i=0;i<v+1;i++)current_path[i]=path[i];
+	}
+//	std::cout<<counter<<" XD "<<std::endl;
+//	for(int i=0;i<v+1;i++)std::cout<<current_path[i]<<" ";
+//	std::cout<<std::endl;
+//	for(int i=0;i<v;i++){
+//		for(int j=0;j<v;j++){
+//			printf("%lf\t",pheromones[i][j]);
+//		}
+//		std::cout<<std::endl;
+//	}
+//	std::cout<<sum<<std::endl;
+	delete[] path;
+	delete[] visited;
+
+}
+
 
 double fRand(double fMin, double fMax){
     double f = (double)rand() / RAND_MAX;
@@ -101,7 +161,9 @@ int main(int argc, char* argv[]){
       	}
       	printf("\n");
   	}
-  	int ants_quantity = v / v;
+	current_path=new int[v+1];
+	counter=0;
+  	int ants_quantity = v;
 	int* ants= new int[ants_quantity];
   	//tabu table for every mruwa - "1" means visited, 0 means non-visited
   	bool** tabu= new bool*[ants_quantity];
@@ -115,8 +177,13 @@ int main(int argc, char* argv[]){
   	reset_array(tabu, ants_quantity, v, ants);
   	int* start_pos = new int[ants_quantity];
   	int* end_pos = new int[ants_quantity];
+
+
+	int k;
+
+
 	double start = omp_get_wtime();
-  	for(int k = 0; k < CC; ++k){
+  	for(k = 0; k < CC; ++k){
 		for(int i = 0; i < v - 1; ++i){ //choosing start point for each ant
         	for(int j = 0; j < ants_quantity; j++){ //
               	int temp = choose_edge(a, v, ants[j], pheromones, tabu[j]);
@@ -135,6 +202,9 @@ int main(int argc, char* argv[]){
         }
         update_edge_pheromones(pheromones, start_pos, end_pos, v, ants_quantity);
         reset_array(tabu, ants_quantity, v, ants);
+		find_minimum_path(pheromones,a,v);
+		if(counter>=SP)break;
+
     }
 	int *path = 	new int[v + 1]; path[0] = 0;
 	bool *visited = new bool[v]; visited[0] = 1; 
@@ -156,6 +226,7 @@ int main(int argc, char* argv[]){
 		current = max_index;
 	}
 	path[v] = 0;
+	sum+=a[current][0];
 	double end = omp_get_wtime();
 	for (int i = 0; i < v; i++) {
       	for (int j = 0; j < v; j++) {
@@ -169,6 +240,7 @@ int main(int argc, char* argv[]){
 	std::cout << std::endl;
 	std::cout << sum << std::endl;
 	std::cout << end - start << std::endl;
+	std::cout <<"Generations: "<< k <<std::endl;
   	//here we need code to find shortest path
   	return 0;
     }
